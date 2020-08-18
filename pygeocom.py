@@ -9,11 +9,17 @@ class geocom_command:
         rpc_id = self.rpc_id
         def wrapped_f(self) -> Tuple[Any, ...]:
             self.stream.write('\n%R1Q,{}:\r\n'.format(rpc_id).encode('ascii'))
-            header, parameters = self.stream.readline().split(':', 1)
-            reply_type, return_code, transaction_id = header.split(b',')
-            return_code = int(return_code)
+            header, parameters = self.stream.readline().split(b':', 1)
+            
+            reply_type, geocom_return_code, transaction_id = header.split(b',')
+            geocom_return_code = int(geocom_return_code)
             transaction_id = int(transaction_id)
-            return reply
+
+            parameters = parameters.rstrip()
+            rpc_return_code, *parameters = parameters.split(b',')
+            rpc_return_code = int(rpc_return_code)
+            
+            return parameters
         return wrapped_f
 
 class PyGeoCom:
@@ -30,6 +36,6 @@ class PyGeoCom:
     def get_instrument_name(self) -> str:
         pass
 
-    @geocom_command(5035
+    @geocom_command(5035)
     def get_device_config(self) -> (int, int):
         pass
