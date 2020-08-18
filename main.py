@@ -6,8 +6,10 @@ def main():
     
     geo = PyGeoCom(ser)
 
-    r = geo.request(5003)
-    print(r)
+    print(geo.get_instrument_number())
+    print(geo.get_instrument_name())
+    print(geo.get_device_config())
+
     ser.close()
 
 if __name__ == "__main__":
