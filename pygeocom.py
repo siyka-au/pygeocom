@@ -161,15 +161,15 @@ class ReturnCode(Enum):
     GRC_EDM_ACTION_NO_MORE_VALID  = GRC_EDM + 54 # Elapsed time between prepare und start fast measurement for ATR to long
     GRC_EDM_MULTRG_ERR            = GRC_EDM + 55 # Possibly more than one target (also a sensor error)
     
-    GRC_MOT_UNREADY     = GRC_MOT + 0 #motorization is not ready (1792)
-    GRC_MOT_BUSY        = GRC_MOT + 1 #motorization is handling another task (1793)
-    GRC_MOT_NOT_OCONST  = GRC_MOT + 2 #motorization is not in velocity mode (1794)
-    GRC_MOT_NOT_CONFIG  = GRC_MOT + 3 #motorization is in the wrong mode or busy (1795)
-    GRC_MOT_NOT_POSIT   = GRC_MOT + 4 #motorization is not in posit mode (1796)
-    GRC_MOT_NOT_SERVICE = GRC_MOT + 5 #motorization is not in service mode (1797)
-    GRC_MOT_NOT_BUSY    = GRC_MOT + 6 #motorization is handling no task (1798)
-    GRC_MOT_NOT_LOCK    = GRC_MOT + 7 #motorization is not in tracking mode (1799)
-    GRC_MOT_NOT_SPIRAL  = GRC_MOT + 8 #motorization is not in spiral mode (1800)
+    GRC_MOT_UNREADY     = GRC_MOT + 0 # motorization is not ready (1792)
+    GRC_MOT_BUSY        = GRC_MOT + 1 # motorization is handling another task (1793)
+    GRC_MOT_NOT_OCONST  = GRC_MOT + 2 # motorization is not in velocity mode (1794)
+    GRC_MOT_NOT_CONFIG  = GRC_MOT + 3 # motorization is in the wrong mode or busy (1795)
+    GRC_MOT_NOT_POSIT   = GRC_MOT + 4 # motorization is not in posit mode (1796)
+    GRC_MOT_NOT_SERVICE = GRC_MOT + 5 # motorization is not in service mode (1797)
+    GRC_MOT_NOT_BUSY    = GRC_MOT + 6 # motorization is handling no task (1798)
+    GRC_MOT_NOT_LOCK    = GRC_MOT + 7 # motorization is not in tracking mode (1799)
+    GRC_MOT_NOT_SPIRAL  = GRC_MOT + 8 # motorization is not in spiral mode (1800)
     
     GRC_TMC_NO_FULL_CORRECTION = GRC_TMC + 3      # Warning: measurment without full correction
     GRC_TMC_ACCURACY_GUARANTEE = GRC_TMC + 4      # Info   : accuracy can not be guarantee
@@ -203,6 +203,19 @@ class ReturnCode(Enum):
     GRC_BMM_UNKNOWN_LAYER          = GRC_BMM + 16 # Required layer does not exist
     GRC_BMM_INVALID_LAYERLEN       = GRC_BMM + 17 # Layer length exceeds maximum
 
+    AUT_RC_TIMEOUT          = GRC_AUT +  4 # Timeout, no target found
+    AUT_RC_DETENT_ERROR     = GRC_AUT +  5 # 
+    AUT_RC_ANGLE_ERROR      = GRC_AUT +  6 #
+    AUT_RC_MOTOR_ERROR      = GRC_AUT +  7 # Motorisation error
+    AUT_RC_INCACC           = GRC_AUT +  8 #
+    AUT_RC_DEV_ERROR        = GRC_AUT +  9 # Deviation measurement error
+    AUT_RC_NO_TARGET        = GRC_AUT + 10 # No target detected
+    AUT_RC_MULTIPLE_TARGETS = GRC_AUT + 11 # Multiple targets detected
+    AUT_RC_BAD_ENVIRONMENT  = GRC_AUT + 12 # Bad environment conditions
+    AUT_RC_DETECTOR_ERROR   = GRC_AUT + 13 #
+    AUT_RC_NOT_ENABLED      = GRC_AUT + 14 #
+    AUT_RC_CALACC           = GRC_AUT + 15 #
+    AUT_RC_ACCURACY         = GRC_AUT + 16 # Position not exactly reached
 
 class byte(int):
     def __new__(cls, value, *args, **kwargs):
@@ -219,18 +232,23 @@ class byte(int):
         return  super(cls, cls).__new__(cls, value)
 
 class PrismType(Enum):
-    ROUND        = 0  # prism type: round
-    MINI         = 1  # prism type: mini
-    TAPE         = 2  # prism type: tape
-    DEG360       = 3  # prism type: 360
-    USER1        = 4  # prism type: user1 
-    USER2        = 5  # prism type: user2
-    USER3        = 6  # prism type: user3
-    DEG360_MINI  = 7  # prism type: 360 mini 
-    MINI_ZERO    = 8  # prism type: mini zero 
-    USER         = 9  # prism type: user
-    HDS_TAPE     = 10 # prism type: tape cyra
-    GRZ121_ROUND = 11 # prism type: GRZ121 round for machine guidance
+    LEICA_ROUND        =  0 # Prism type: Leica circular prism
+    LEICA_MINI         =  1 # Prism type: Leica mini prism
+    LEICA_TAPE         =  2 # Prism type: Leica reflective tape
+    LEICA_360          =  3 # Prism type: Leica 360° prism
+    USER1              =  4 # Prism type: User defined 1 
+    USER2              =  5 # Prism type: User defined 2
+    USER3              =  6 # Prism type: User defined 3
+    LEICA_360_MINI     =  7 # Prism type: Leica 360° mini 
+    LEICA_MINI_ZERO    =  8 # Prism type: Leica mini zero 
+    LEICA_USER         =  9 # Prism type: user???
+    LEICA_HDS_TAPE     = 10 # Prism type: tape cyra???
+    LEICA_GRZ121_ROUND = 11 # Prism type: Leica GRZ121 round for machine guidance
+
+class ReflectorType(Enum):
+    UNDEFINED = 0
+    PRISM = 1
+    TAPE = 2
 
 class TargetType(Enum):
     REFLECTOR = 0
@@ -359,10 +377,33 @@ class LockInStatus(Enum):
     LOCKED_IN  = 1
     PREDICTION = 2
 
+class MeasurementMode(Enum):
+    NO_MEASUREMENTS  = 0 # No measurements, take last one
+    NO_DISTANCE      = 1 # No distance measurement, angles only
+    DEFAULT_DISTANCE = 2 # Default distance measurements, pre-defined using MeasurementProgram
+    CLEAR_DISTANCE   = 5 # Clear distances
+    STOP_TRACKING    = 6 # Stop tracking laser
+
+class MeasurementProgram(Enum):
+    SINGLE_REF_STANDARD  = 0 # standard single IR distance with reflector
+    SINGLE_REF_FAST      = 1 # fast single IR distance with reflector
+    SINGLE_REF_VISIBLE   = 2 # long range distance with reflector (red laser)
+    SINGLE_RLESS_VISIBLE = 3 # single RL distance reflector free (red laser)
+    CONT_REF_STANDARD    = 4 # tracking IR distance with reflector
+    CONT_REF_FAST        = 5 # fast tracking IR distance with reflector
+    CONT_RLESS_VISIBLE   = 6 # fast tracking RL distance reflector free (red)
+    AVG_REF_STANDARD     = 7 # Average IR distance with reflector
+    AVG_REF_VISIBLE      = 8 # Average long range dist. with reflector (red)
+    AVG_RLESS_VISIBLE    = 9 # Average RL distance reflector free (red laser)
+
+def decode_string(data: bytes) -> str:
+    return data.decode('unicode_escape').strip('"')
+
 class PyGeoCom:
-    def __init__(self, stream):
+    def __init__(self, stream, debug: bool = False):
         self.__stream = stream
         self.__stream.write(b'\n')
+        self.__debug = debug
 
     def __request(self, rpc_id: int, args: Tuple[Any, ...] = ()) -> Tuple[Any, ...]:
 
@@ -377,11 +418,11 @@ class PyGeoCom:
                 return "'{:02X}'".format(arg)
 
         d = '\n%R1Q,{}:{}\r\n'.format(rpc_id, ','.join([encode(a) for a in args])).encode('ascii')
-        #print(b'>> ' + d)
+        if self.__debug: print(b'>> ' + d)
         self.__stream.write(d)
 
         d = self.__stream.readline()
-        #print(b'<< ' + d)
+        if self.__debug: print(b'<< ' + d)
         header, parameters = d.split(b':', 1)
         
         reply_type, geocom_return_code, transaction_id = header.split(b',')
@@ -404,7 +445,7 @@ class PyGeoCom:
 
     def get_instrument_name(self) -> str:
         instrument_name, = self.__request(5004)
-        return instrument_name.decode('utf-8').strip('"')
+        return decode_string(instrument_name)
 
     def get_device_config(self) -> DeviceType:
         device_class, device_type = self.__request(5035)
@@ -498,4 +539,52 @@ class PyGeoCom:
 
     # Speed is in radians/second, with a maximum of ±0.79rad/s each
     def set_velocity(self, hoziontal_speed: float, vertical_speed: float):
+        MAX_SPEED = 0.79 # rad/s
+        if abs(hoziontal_speed) > MAX_SPEED:
+            raise ValueError("Horizontal speed exceeds the ±0.79 range")
+        if abs(vertical_speed) > MAX_SPEED:
+            raise ValueError("Horizontal speed exceeds the ±0.79 range")
         self.__request(6004, (hoziontal_speed, vertical_speed))
+
+    def get_target_type(self) -> TargetType:
+        target_type, = self.__request(17022)
+        return TargetType(int(target_type))
+
+    def set_target_type(self, target_type: TargetType):
+        self.__request(17021, (target_type.value,))
+
+    def get_prism_type(self) -> PrismType:
+        prism_type, = self.__request(17009)
+        return PrismType(int(prism_type))
+
+    def set_prism_type(self, prism_type: PrismType):
+        self.__request(17008, (prism_type.value,))
+
+    def get_prism_definition(self, prism_type: PrismType) -> (str, float, ReflectorType):
+        name, correction, reflector_type =  self.__request(17023, (prism_type.value,))
+        name = decode_string(name)
+        correction = float(correction)
+        reflector_type = ReflectorType(int(reflector_type))
+        return name, correction, reflector_type
+
+    def set_prism_definition(self, prism_type: PrismType, name: str, correction: float, reflector_type: ReflectorType):
+        self.__request(17024, (prism_type.value, name, correction, reflector_type.value))
+
+    def get_measurement_program(self) -> MeasurementProgram:
+        measurement_program, =  self.__request(17018)
+        return MeasurementProgram(int(measurement_program))
+
+    def set_measurement_program(self, measurement_program: MeasurementProgram):
+        self.__request(17019, (measurement_program.value,))
+
+    def measure_distance_and_angles(self, measurement_mode: MeasurementMode) -> (MeasurementMode, float, float, float):
+        horizontal, vertical, distance, measurement_mode =  self.__request(17017, (measurement_mode.value,))
+        horizontal = float(horizontal)
+        vertical = float(vertical)
+        distance = float(distance)
+        measurement_mode = MeasurementMode(int(measurement_mode))
+
+        return measurement_mode, horizontal, vertical, distance
+
+    def search_target(self):
+        self.__request(17020, (0,))

@@ -1,12 +1,12 @@
 import serial
-from pygeocom import PyGeoCom, RecordFormat, ControllerMode, ControllerStopMode, LockInStatus
+from pygeocom import PyGeoCom, RecordFormat, ControllerMode, ControllerStopMode, LockInStatus, PrismType, ReflectorType, MeasurementMode, MeasurementProgram, TargetType
 from datetime import datetime
 from time import sleep, time
 
 def main():
-    ser = serial.Serial('/dev/ttyUSB0', 19200, timeout=1)
+    ser = serial.Serial('/dev/ttyUSB0', 19200, timeout=180)
     
-    geo = PyGeoCom(ser)
+    geo = PyGeoCom(ser, debug = False)
 
     print("Instrument Name: {}".format(geo.get_instrument_name()))
     print("Serial Number:   {}".format(geo.get_instrument_number()))
@@ -51,23 +51,40 @@ def main():
 
     #print(geo.get_egl_intensity())
 
-    print(geo.get_motor_lock_status())
+    print(geo.get_target_type())
+    print(geo.get_prism_type())
 
+    print(geo.get_prism_definition(PrismType.LEICA_ROUND))
+    print(geo.get_prism_definition(PrismType.LEICA_MINI))
+    print(geo.get_prism_definition(PrismType.LEICA_TAPE))
+    print(geo.get_prism_definition(PrismType.LEICA_360))
+    print(geo.get_prism_definition(PrismType.USER1))
+    print(geo.get_prism_definition(PrismType.USER2))
+    print(geo.get_prism_definition(PrismType.USER3))
+    print(geo.get_prism_definition(PrismType.LEICA_360_MINI))
 
-    geo.start_controller(ControllerMode.LOCK_IN)
+    # For TPS1200 and onward I presume
+    #print(geo.get_prism_definition(PrismType.MINI_ZERO))
+    #print(geo.get_prism_definition(PrismType.USER))
+    #print(geo.get_prism_definition(PrismType.HDS_TAPE))
+    #print(geo.get_prism_definition(PrismType.GRZ121_ROUND))
+    
 
-    timeout = 5   # [seconds]
-    timeout_start = time()
+    #print(geo.get_motor_lock_status())
+    #geo.start_controller(ControllerMode.CONSTANT_SPEED)
+    #print(geo.get_motor_lock_status())
+    #geo.set_velocity(0.1, 0.1)
+    #sleep(3)
+    #geo.stop_controller(ControllerStopMode.NORMAL)
+    #geo.start_controller(ControllerMode.RELATIVE_POSITIONING)
 
-    while time() < timeout_start + timeout:
-        if geo.get_motor_lock_status() == LockInStatus.LOCKED_IN:
-            break
+    print(geo.get_measurement_program())
 
-    print(geo.get_motor_lock_status())
+    geo.set_measurement_program(MeasurementProgram.SINGLE_RLESS_VISIBLE)
+    print(geo.measure_distance_and_angles(MeasurementMode.DEFAULT_DISTANCE))
 
-    geo.stop_controller(ControllerStopMode.NORMAL)
-
-    print(geo.get_motor_lock_status())
+    geo.set_target_type(TargetType.REFLECTOR)
+    geo.search_target()
 
     ser.close()
 
