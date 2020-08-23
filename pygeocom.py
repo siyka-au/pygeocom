@@ -488,9 +488,6 @@ class PyGeoCom:
         binary_available, = self.__request(113)
         return bool(binary_available)
 
-    def local_mode(self):
-        self.__request(1)
-
     def get_record_format(self) -> RecordFormat:
         record_format, = self.__request(8011)
         return RecordFormat(int(record_format)),
@@ -588,3 +585,13 @@ class PyGeoCom:
 
     def search_target(self):
         self.__request(17020, (0,))
+
+    def get_server_software_version(self) -> (int, int, int):
+        release, version, subversion = self.__request(110)
+        return int(release), int(version), int(subversion)
+
+    def set_send_delay(self, delay_ms: int):
+        self.__request(109, (delay_ms,))
+
+    def local_mode(self):
+        self.__request(1)
