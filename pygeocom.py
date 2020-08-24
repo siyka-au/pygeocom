@@ -396,6 +396,19 @@ class MeasurementProgram(Enum):
     AVG_REF_VISIBLE      = 8 # Average long range dist. with reflector (red)
     AVG_RLESS_VISIBLE    = 9 # Average RL distance reflector free (red laser)
 
+class PositionMode(Enum):
+    NORMAL  = 0
+    PRECISE = 1
+
+class FineAdjustPositionMode(Enum):
+    NORM   = 0 # Angle tolerance
+    POINT  = 1 # Point tolerance
+    DEFINE = 2 # System independent positioning tolerance; set wit PyGeoCom.set_tolerance()
+
+class ATRRecognitionMode(Enum):
+    POSITION = 0 # Positioning to the horizontal and vertical angle
+    TARGET   = 1 # Positioning to a target in the environment of the horizontal and vertical angle
+
 def decode_string(data: bytes) -> str:
     return data.decode('unicode_escape').strip('"')
 
@@ -414,6 +427,8 @@ class PyGeoCom:
                 return '{}'.format(arg)
             elif (type(arg) == float):
                 return '{}'.format(arg)
+            elif (type(arg) == bool):
+                return '1' if arg == True else '0'
             elif (type(arg) == byte):
                 return "'{:02X}'".format(arg)
 
@@ -603,12 +618,24 @@ class PyGeoCom:
     def set_user_atr_state(self, atr_state: OnOff):
         self.__request(18005, (atr_state.value,))
 
+    def user_atr_state_on(self):
+        self.set_user_atr_state(OnOff.ON)
+
+    def user_atr_state_off(self):
+        self.set_user_atr_state(OnOff.OFF)
+
     def get_user_lock_state(self) -> OnOff:
         lock_state, = self.__request(18008)
         return OnOff(int(lock_state))
     
     def set_user_lock_state(self, lock_state: OnOff):
         self.__request(18007, (lock_state.value,))
+
+    def user_lock_state_on(self):
+        self.set_user_lock_state(OnOff.ON)
+
+    def user_lock_state_off(self):
+        self.set_user_lock_state(OnOff.OFF)
 
     def get_rcs_search_switch(self) -> OnOff:
         """This command gets the current RCS-Searching mode switch. If RCS style searching
@@ -624,3 +651,57 @@ class PyGeoCom:
     def switch_rcs_search(self, search_switch: OnOff):
         self.__request(18009, (search_switch.value,))
     
+    def get_tolerance(self) -> (float, float):
+        horizontal_tolerance, vertical_tolerance = self.__request(9008)
+        return float(horizontal_tolerance), float(vertical_tolerance)
+
+    def set_tolerance(self, horizontal_tolerance: float, vertical_tolerance: float):
+        self.__request(9007, (horizontal_tolerance, vertical_tolerance))
+
+    def get_positioning_timeout(self) -> (float, float):
+        horizontal_timeout, vertical_timeout = self.__request(9012)
+        return float(horizontal_timeout), float(vertical_timeout)
+
+    def set_positioning_timeout(self, horizontal_timeout: float, vertical_timeout: float):
+        self.__request(9011, (horizontal_timeout, vertical_timeout))
+
+    def position(self, horizontal: float, vertical: float, position_mode: PositionMode = PositionMode.NORMAL, atr_mode: ATRRecognitionMode = ATRRecognitionMode.POSITION):
+        self.__request(9027, (horizontal, vertical, position_mode.value, atr_mode.value, False))
+
+    def change_face(self, position_mode: PositionMode = PositionMode.NORMAL, atr_mode: ATRRecognitionMode = ATRRecognitionMode.POSITION):
+        self.__request(9028, (position_mode.value, atr_mode.value, False))
+
+    def fine_adjust(self, horizontal_search_range: float, vertical_search_range: float):
+        self.__request(9037, (horizontal_search_range, vertical_search_range, False))
+
+    def search(self, horizontal_search_range: float, vertical_search_range: float):
+        self.__request(9029, (horizontal_search_range, vertical_search_range, False))
+
+    def get_fine_adjust_mode(self) -> FineAdjustPositionMode:
+        fine_adjust_mode, = self.__request(9030)
+        return FineAdjustPositionMode(float(fine_adjust_mode))
+
+    def set_fine_adjust_mode(self, fine_adjust_mode: FineAdjustPositionMode):
+        self.__request(9031, (fine_adjust_mode.value,))
+
+    def lock_in(self):
+        self.__request(9013)
+
+    def get_search_area(self) -> (float, float, float, float, bool):
+        horizontal_centre, vertical_centre, horizontal_range, vertical_range, enabled = self.__request(9042)
+        horizontal_centre = float(horizontal_centre)
+        vertical_centre = float(vertical_centre)
+        horizontal_range = float(horizontal_range)
+        vertical_range = float(vertical_range)
+        enabled = bool(enabled)
+        return horizontal_centre, vertical_centre, horizontal_range, vertical_range, enabled
+
+    def set_search_area(self, horizontal_centre: float, vertical_centre: float, horizontal_range: float, vertical_range: float, enabled: bool):
+        self.__request(9043, (horizontal_centre, vertical_centre, horizontal_range, vertical_range, enabled))
+
+    def get_search_spiral(self) -> (float, float):
+        horizontal_range, vertical_range = self.__request(9040)
+        return float(horizontal_range), float(vertical_range)
+
+    def set_search_spiral(self, horizontal_range: float, vertical_range: float):
+        self.__request(9041, (horizontal_range, vertical_range))
