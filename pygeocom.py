@@ -595,3 +595,32 @@ class PyGeoCom:
 
     def local_mode(self):
         self.__request(1)
+
+    def get_user_atr_state(self) -> OnOff:
+        atr_state, = self.__request(18006)
+        return OnOff(int(atr_state))
+    
+    def set_user_atr_state(self, atr_state: OnOff):
+        self.__request(18005, (atr_state.value,))
+
+    def get_user_lock_state(self) -> OnOff:
+        lock_state, = self.__request(18008)
+        return OnOff(int(lock_state))
+    
+    def set_user_lock_state(self, lock_state: OnOff):
+        self.__request(18007, (lock_state.value,))
+
+    def get_rcs_search_switch(self) -> OnOff:
+        """This command gets the current RCS-Searching mode switch. If RCS style searching
+        is enabled, then the extended searching for BAP_SearchTarget or after a loss of
+        lock is activated. This command is valid for TCA instruments only.
+
+        :returns: state of the RCS searching switch
+        :rtype: OnOff
+        """
+        search_switch, = self.__request(18010)
+        return OnOff(int(search_switch))
+    
+    def switch_rcs_search(self, search_switch: OnOff):
+        self.__request(18009, (search_switch.value,))
+    
