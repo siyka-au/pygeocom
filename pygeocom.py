@@ -259,17 +259,6 @@ class InclinationSensorProgram(Enum):
     TMC_AUTO_INC = 1    # Automatic mode (sensor/plane)
     TMC_PLANE_INC = 2   # Use plane (apriori sigma)
 
-class TMCMeasurementMode(Enum):
-    TMC_STOP = 0            # Stop measurement program
-    TMC_DEF_DIST = 1        # Default DIST-measurement program
-    TMC_TRK_DIST = 2        # Distance-TRK measurement program
-    TMC_CLEAR = 3           # TMC_STOP and clear data
-    TMC_SIGNAL = 4          # Signal measurement (test function)
-    TMC_DO_MEASURE = 6      # (Re)start measurement task
-    TMC_RTRK_DIST = 8       # Distance-TRK measurement program
-    TMC_RED_TRK_DIST = 10   # Red laser tracking
-    TMC_FREQUENCY = 11      # Frequency measurement (test)
-
 class EDMMode(Enum):
     EDM_MODE_NOT_USED = 0   # Init value
     EDM_SINGLE_TAPE = 1     # Single measurement with tape
@@ -408,6 +397,45 @@ class FineAdjustPositionMode(Enum):
 class ATRRecognitionMode(Enum):
     POSITION = 0 # Positioning to the horizontal and vertical angle
     TARGET   = 1 # Positioning to a target in the environment of the horizontal and vertical angle
+
+class TMCInclinationMode(Enum):
+    USE_SENSOR = 0
+    AUTOMATIC  = 1
+    USE_PLANE  = 2
+
+class TMCMeasurementMode(Enum):
+    STOP                      =  0 # Stop measurement program
+    DEFAULT_DIST_MEASUREMENT  =  1 # Default DIST-measurement program
+    DISTANCE_TRK_MEASUREMENT  =  2 # Distance-TRK measurement program
+    CLEAR                     =  3 # TMC_STOP and clear data
+    SIGNAL                    =  4 # Signal measurement (test function)
+    RESTART_MEASUREMENT       =  6 # (Re)start measurement task
+    DISTANCE_RTRK_MEASUREMENT =  8 # Distance-TRK measurement program
+    RED_LASER_TRACKING        = 10 # Red laser tracking
+    FREQUENCY_MEASUREMENT     = 11 # Frequency measurement (test)
+
+class EDMMeasurementMode(Enum):
+    MODE_NOT_USER            =  0
+    SINGLE_TAPE              =  1
+    SINGLE_STANDARD          =  2
+    SINGLE_FAST              =  3
+    SINGLE_LRANGE            =  4
+    SINGLE_SRANGE            =  5
+    CONTINUOUS_STANDARD      =  6
+    CONTINUOUS_DYNAMIC       =  7
+    CONTINUOUS_REFLECTORLESS =  8
+    CONTINUOUS_FAST          =  9
+    AVERAGE_IR               = 10
+    AVERAGE_SR               = 11
+    AVERAGE_LR               = 12
+
+class FacePosition(Enum):
+    NORMAL = 0
+    TURNED = 1
+
+class ActualFace(Enum):
+    FACE_1 = 0
+    FACE_2 = 1
 
 def decode_string(data: bytes) -> str:
     return data.decode('unicode_escape').strip('"')
@@ -705,3 +733,5 @@ class PyGeoCom:
 
     def set_search_spiral(self, horizontal_range: float, vertical_range: float):
         self.__request(9041, (horizontal_range, vertical_range))
+
+    
