@@ -12,8 +12,10 @@ def main():
     # print("Serial Number:   {}".format(geo.get_instrument_number()))
     # print("Configuration")
     # print(geo.get_device_config())
-    # a, b, c = geo.get_software_version()
-    # print("Software Version: {}.{}.{}".format(a, b, c))
+    a, b, c = geo.get_software_version()
+    print("Software Version: {}.{}.{}".format(a, b, c))
+    a, b, c = geo.get_server_software_version()
+    print("Server Software Version: {}.{}.{}".format(a, b, c))
     # print("Binary Protocol Available: {}".format('Yes' if geo.get_binary_available() else 'No'))
     # print()
 
