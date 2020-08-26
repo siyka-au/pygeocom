@@ -1,6 +1,7 @@
 from typing import Tuple, Any
 from enum import Enum, IntFlag
 from datetime import datetime
+from collections import namedtuple
 
 GRC_TPS = 0x0000   # main return codes (identical to RC_SUP!!)
 GRC_SUP = 0x0000   # supervisor task (identical to RCBETA!!)
@@ -405,14 +406,14 @@ class TMCInclinationMode(Enum):
 
 class TMCMeasurementMode(Enum):
     STOP                      =  0 # Stop measurement program
-    DEFAULT_DIST_MEASUREMENT  =  1 # Default DIST-measurement program
-    DISTANCE_TRK_MEASUREMENT  =  2 # Distance-TRK measurement program
-    CLEAR                     =  3 # TMC_STOP and clear data
+    DEFAULT_DISTANCE  =  1 # Default DIST-measurement program
+    DISTANCE_TRACKING  =  2 # Distance-TRK measurement program
+    STOP_AND_CLEAR                     =  3 # TMC_STOP and clear data
     SIGNAL                    =  4 # Signal measurement (test function)
-    RESTART_MEASUREMENT       =  6 # (Re)start measurement task
-    DISTANCE_RTRK_MEASUREMENT =  8 # Distance-TRK measurement program
+    RESTART      =  6 # (Re)start measurement task
+    DISTANCE_RAPID_TRACKING =  8 # Distance-TRK measurement program
     RED_LASER_TRACKING        = 10 # Red laser tracking
-    FREQUENCY_MEASUREMENT     = 11 # Frequency measurement (test)
+    TESTING_FREQUENCY     = 11 # Frequency measurement (test)
 
 class EDMMeasurementMode(Enum):
     MODE_NOT_USER            =  0
@@ -437,16 +438,19 @@ class ActualFace(Enum):
     FACE_1 = 0
     FACE_2 = 1
 
+Coordinate = namedtuple('Coordinate', 'east north head')
+Angles = namedtuple('Angles', 'hz, v')
+
 def decode_string(data: bytes) -> str:
     return data.decode('unicode_escape').strip('"')
 
 class PyGeoCom:
     def __init__(self, stream, debug: bool = False):
-        self.__stream = stream
-        self.__stream.write(b'\n')
-        self.__debug = debug
+        self._stream = stream
+        self._stream.write(b'\n')
+        self._debug = debug
 
-    def __request(self, rpc_id: int, args: Tuple[Any, ...] = ()) -> Tuple[Any, ...]:
+    def _request(self, rpc_id: int, args: Tuple[Any, ...] = ()) -> Tuple[Any, ...]:
 
         def encode(arg) -> str:
             if (type(arg) == str):
@@ -461,11 +465,11 @@ class PyGeoCom:
                 return "'{:02X}'".format(arg)
 
         d = '\n%R1Q,{}:{}\r\n'.format(rpc_id, ','.join([encode(a) for a in args])).encode('ascii')
-        if self.__debug: print(b'>> ' + d)
-        self.__stream.write(d)
+        if self._debug: print(b'>> ' + d)
+        self._stream.write(d)
 
-        d = self.__stream.readline()
-        if self.__debug: print(b'<< ' + d)
+        d = self._stream.readline()
+        if self._debug: print(b'<< ' + d)
         header, parameters = d.split(b':', 1)
         
         reply_type, geocom_return_code, transaction_id = header.split(b',')
@@ -483,19 +487,19 @@ class PyGeoCom:
         return parameters
 
     def get_instrument_number(self) -> int:
-        instrument_number, = self.__request(5003)
+        instrument_number, = self._request(5003)
         return int(instrument_number)
 
     def get_instrument_name(self) -> str:
-        instrument_name, = self.__request(5004)
+        instrument_name, = self._request(5004)
         return decode_string(instrument_name)
 
     def get_device_config(self) -> DeviceType:
-        device_class, device_type = self.__request(5035)
+        device_class, device_type = self._request(5035)
         return DeviceClass(int(device_class)), DeviceType(int(device_type))
 
     def get_date_time(self) -> datetime:
-        year, month, day, hour, minute, second = self.__request(5008)
+        year, month, day, hour, minute, second = self._request(5008)
         year = int(year)
         month = byte(month)
         day = byte(day)
@@ -505,41 +509,41 @@ class PyGeoCom:
         return datetime(year, month, day, hour, minute, second)
     
     def set_date_time(self, dt: datetime):
-        self.__request(5007, (dt.year, byte(dt.month), byte(dt.day), byte(dt.hour), byte(dt.minute), byte(dt.second)))
+        self._request(5007, (dt.year, byte(dt.month), byte(dt.day), byte(dt.hour), byte(dt.minute), byte(dt.second)))
 
     def get_software_version(self) -> (int, int, int):
-        release, version, subversion = self.__request(5034)
+        release, version, subversion = self._request(5034)
         return int(release), int(version), int(subversion)
 
     def check_power(self) -> (int, PowerPath, PowerPath):
-        capacity, active_power, power_suggest = self.__request(5039)
+        capacity, active_power, power_suggest = self._request(5039)
         return int(capacity), PowerPath(int(active_power)), PowerPath(int(power_suggest))
 
     def get_memory_voltage(self) -> float:
-        memory_voltage, = self.__request(5010)
+        memory_voltage, = self._request(5010)
         return float(memory_voltage)
 
     def get_internal_temperature(self) -> float:
-        internal_temperature, = self.__request(5011)
+        internal_temperature, = self._request(5011)
         return float(internal_temperature)
 
     def get_up_counter(self) -> (int, int):
-        power_on, wake_up = self.__request(12003)
+        power_on, wake_up = self._request(12003)
         return int(power_on), int(wake_up)
 
     def get_binary_available(self) -> bool:
-        binary_available, = self.__request(113)
+        binary_available, = self._request(113)
         return bool(binary_available)
 
     def get_record_format(self) -> RecordFormat:
-        record_format, = self.__request(8011)
+        record_format, = self._request(8011)
         return RecordFormat(int(record_format)),
 
     def set_record_format(self, record_format: RecordFormat):
-        self.__request(8012, (record_format.value,))
+        self._request(8012, (record_format.value,))
 
     def get_double_precision_setting(self) -> int:
-        number_of_digits, = self.__request(108)
+        number_of_digits, = self._request(108)
         return int(number_of_digits)
 
     def set_double_precision_setting(self, number_of_digits: int):
@@ -547,10 +551,10 @@ class PyGeoCom:
             raise ValueError("Number of digits must be greater than or equal to 0")
         if number_of_digits > 15:
             raise ValueError("Number of digits must be lesser than or equal to 15")
-        self.__request(107, (number_of_digits,))
+        self._request(107, (number_of_digits,))
     
     def laser_pointer(self, state: OnOff):
-        self.__request(1004, (state.value,))
+        self._request(1004, (state.value,))
 
     def laser_pointer_on(self):
         self.laser_pointer(OnOff.ON)
@@ -560,22 +564,22 @@ class PyGeoCom:
 
     # Not tested as I don't have a device with an EGL
     def get_egl_intensity(self) -> EGLIntensity:
-        intensity, = self.__request(1058)
+        intensity, = self._request(1058)
         return EGLIntensity(int(intensity))
 
     # Not tested as I don't have a device with an EGL
     def set_egl_intensity(self, intensity: EGLIntensity):
-        self.__request(1059, (intensity.value,))
+        self._request(1059, (intensity.value,))
 
     def get_motor_lock_status(self) -> LockInStatus:
-        motor_lock_status, = self.__request(6021)
+        motor_lock_status, = self._request(6021)
         return LockInStatus(int(motor_lock_status))
 
     def start_controller(self, controller_mode: ControllerMode):
-        self.__request(6001, (controller_mode.value,))
+        self._request(6001, (controller_mode.value,))
 
     def stop_controller(self, controller_stop_mode: ControllerStopMode):
-        self.__request(6002, (controller_stop_mode.value,))
+        self._request(6002, (controller_stop_mode.value,))
 
     # Speed is in radians/second, with a maximum of ±0.79rad/s each
     def set_velocity(self, hoziontal_speed: float, vertical_speed: float):
@@ -584,41 +588,41 @@ class PyGeoCom:
             raise ValueError("Horizontal speed exceeds the ±0.79 range")
         if abs(vertical_speed) > MAX_SPEED:
             raise ValueError("Horizontal speed exceeds the ±0.79 range")
-        self.__request(6004, (hoziontal_speed, vertical_speed))
+        self._request(6004, (hoziontal_speed, vertical_speed))
 
     def get_target_type(self) -> TargetType:
-        target_type, = self.__request(17022)
+        target_type, = self._request(17022)
         return TargetType(int(target_type))
 
     def set_target_type(self, target_type: TargetType):
-        self.__request(17021, (target_type.value,))
+        self._request(17021, (target_type.value,))
 
     def get_prism_type(self) -> PrismType:
-        prism_type, = self.__request(17009)
+        prism_type, = self._request(17009)
         return PrismType(int(prism_type))
 
     def set_prism_type(self, prism_type: PrismType):
-        self.__request(17008, (prism_type.value,))
+        self._request(17008, (prism_type.value,))
 
     def get_prism_definition(self, prism_type: PrismType) -> (str, float, ReflectorType):
-        name, correction, reflector_type =  self.__request(17023, (prism_type.value,))
+        name, correction, reflector_type =  self._request(17023, (prism_type.value,))
         name = decode_string(name)
         correction = float(correction)
         reflector_type = ReflectorType(int(reflector_type))
         return name, correction, reflector_type
 
     def set_prism_definition(self, prism_type: PrismType, name: str, correction: float, reflector_type: ReflectorType):
-        self.__request(17024, (prism_type.value, name, correction, reflector_type.value))
+        self._request(17024, (prism_type.value, name, correction, reflector_type.value))
 
     def get_measurement_program(self) -> MeasurementProgram:
-        measurement_program, =  self.__request(17018)
+        measurement_program, =  self._request(17018)
         return MeasurementProgram(int(measurement_program))
 
     def set_measurement_program(self, measurement_program: MeasurementProgram):
-        self.__request(17019, (measurement_program.value,))
+        self._request(17019, (measurement_program.value,))
 
     def measure_distance_and_angles(self, measurement_mode: MeasurementMode) -> (MeasurementMode, float, float, float):
-        horizontal, vertical, distance, measurement_mode =  self.__request(17017, (measurement_mode.value,))
+        horizontal, vertical, distance, measurement_mode =  self._request(17017, (measurement_mode.value,))
         horizontal = float(horizontal)
         vertical = float(vertical)
         distance = float(distance)
@@ -627,24 +631,24 @@ class PyGeoCom:
         return measurement_mode, horizontal, vertical, distance
 
     def search_target(self):
-        self.__request(17020, (0,))
+        self._request(17020, (0,))
 
     def get_server_software_version(self) -> (int, int, int):
-        release, version, subversion = self.__request(110)
+        release, version, subversion = self._request(110)
         return int(release), int(version), int(subversion)
 
     def set_send_delay(self, delay_ms: int):
-        self.__request(109, (delay_ms,))
+        self._request(109, (delay_ms,))
 
     def local_mode(self):
-        self.__request(1)
+        self._request(1)
 
     def get_user_atr_state(self) -> OnOff:
-        atr_state, = self.__request(18006)
+        atr_state, = self._request(18006)
         return OnOff(int(atr_state))
     
     def set_user_atr_state(self, atr_state: OnOff):
-        self.__request(18005, (atr_state.value,))
+        self._request(18005, (atr_state.value,))
 
     def user_atr_state_on(self):
         self.set_user_atr_state(OnOff.ON)
@@ -653,11 +657,11 @@ class PyGeoCom:
         self.set_user_atr_state(OnOff.OFF)
 
     def get_user_lock_state(self) -> OnOff:
-        lock_state, = self.__request(18008)
+        lock_state, = self._request(18008)
         return OnOff(int(lock_state))
     
     def set_user_lock_state(self, lock_state: OnOff):
-        self.__request(18007, (lock_state.value,))
+        self._request(18007, (lock_state.value,))
 
     def user_lock_state_on(self):
         self.set_user_lock_state(OnOff.ON)
@@ -673,50 +677,50 @@ class PyGeoCom:
         :returns: state of the RCS searching switch
         :rtype: OnOff
         """
-        search_switch, = self.__request(18010)
+        search_switch, = self._request(18010)
         return OnOff(int(search_switch))
     
     def switch_rcs_search(self, search_switch: OnOff):
-        self.__request(18009, (search_switch.value,))
+        self._request(18009, (search_switch.value,))
     
     def get_tolerance(self) -> (float, float):
-        horizontal_tolerance, vertical_tolerance = self.__request(9008)
+        horizontal_tolerance, vertical_tolerance = self._request(9008)
         return float(horizontal_tolerance), float(vertical_tolerance)
 
     def set_tolerance(self, horizontal_tolerance: float, vertical_tolerance: float):
-        self.__request(9007, (horizontal_tolerance, vertical_tolerance))
+        self._request(9007, (horizontal_tolerance, vertical_tolerance))
 
     def get_positioning_timeout(self) -> (float, float):
-        horizontal_timeout, vertical_timeout = self.__request(9012)
+        horizontal_timeout, vertical_timeout = self._request(9012)
         return float(horizontal_timeout), float(vertical_timeout)
 
     def set_positioning_timeout(self, horizontal_timeout: float, vertical_timeout: float):
-        self.__request(9011, (horizontal_timeout, vertical_timeout))
+        self._request(9011, (horizontal_timeout, vertical_timeout))
 
     def position(self, horizontal: float, vertical: float, position_mode: PositionMode = PositionMode.NORMAL, atr_mode: ATRRecognitionMode = ATRRecognitionMode.POSITION):
-        self.__request(9027, (horizontal, vertical, position_mode.value, atr_mode.value, False))
+        self._request(9027, (horizontal, vertical, position_mode.value, atr_mode.value, False))
 
     def change_face(self, position_mode: PositionMode = PositionMode.NORMAL, atr_mode: ATRRecognitionMode = ATRRecognitionMode.POSITION):
-        self.__request(9028, (position_mode.value, atr_mode.value, False))
+        self._request(9028, (position_mode.value, atr_mode.value, False))
 
     def fine_adjust(self, horizontal_search_range: float, vertical_search_range: float):
-        self.__request(9037, (horizontal_search_range, vertical_search_range, False))
+        self._request(9037, (horizontal_search_range, vertical_search_range, False))
 
     def search(self, horizontal_search_range: float, vertical_search_range: float):
-        self.__request(9029, (horizontal_search_range, vertical_search_range, False))
+        self._request(9029, (horizontal_search_range, vertical_search_range, False))
 
     def get_fine_adjust_mode(self) -> FineAdjustPositionMode:
-        fine_adjust_mode, = self.__request(9030)
+        fine_adjust_mode, = self._request(9030)
         return FineAdjustPositionMode(float(fine_adjust_mode))
 
     def set_fine_adjust_mode(self, fine_adjust_mode: FineAdjustPositionMode):
-        self.__request(9031, (fine_adjust_mode.value,))
+        self._request(9031, (fine_adjust_mode.value,))
 
     def lock_in(self):
-        self.__request(9013)
+        self._request(9013)
 
     def get_search_area(self) -> (float, float, float, float, bool):
-        horizontal_centre, vertical_centre, horizontal_range, vertical_range, enabled = self.__request(9042)
+        horizontal_centre, vertical_centre, horizontal_range, vertical_range, enabled = self._request(9042)
         horizontal_centre = float(horizontal_centre)
         vertical_centre = float(vertical_centre)
         horizontal_range = float(horizontal_range)
@@ -725,13 +729,44 @@ class PyGeoCom:
         return horizontal_centre, vertical_centre, horizontal_range, vertical_range, enabled
 
     def set_search_area(self, horizontal_centre: float, vertical_centre: float, horizontal_range: float, vertical_range: float, enabled: bool):
-        self.__request(9043, (horizontal_centre, vertical_centre, horizontal_range, vertical_range, enabled))
+        self._request(9043, (horizontal_centre, vertical_centre, horizontal_range, vertical_range, enabled))
 
     def get_search_spiral(self) -> (float, float):
-        horizontal_range, vertical_range = self.__request(9040)
+        horizontal_range, vertical_range = self._request(9040)
         return float(horizontal_range), float(vertical_range)
 
     def set_search_spiral(self, horizontal_range: float, vertical_range: float):
-        self.__request(9041, (horizontal_range, vertical_range))
+        self._request(9041, (horizontal_range, vertical_range))
 
-    
+    def get_coordinate(self, inclination_mode: TMCInclinationMode, wait_time: int = 1000) -> (Coordinate, int, Coordinate, int):
+        e, n, h, measure_time, e_cont, n_cont, h_cont, measure_time_cont = self._request(2082, (wait_time, inclination_mode.value,))
+        coordinate = Coordinate(float(e), float(n), float(h))
+        coordinate_cont = Coordinate(float(e_cont), float(n_cont), float(h_cont))
+        measure_time = int(measure_time)
+        measure_time_cont = int(measure_time_cont)
+        return coordinate, measure_time, coordinate_cont, measure_time_cont
+
+    def get_simple_measurement(self, inclination_mode: TMCInclinationMode, wait_time: int = 1000) -> (Angles, float):
+        horizontal, vertical, slope_distance = self._request(2108, (wait_time, inclination_mode.value,))
+        angles = Angles(float(horizontal), float(vertical))
+        slope_distance = float(slope_distance)
+        return angles, slope_distance
+
+    def get_angles_simple(self, inclination_mode: TMCInclinationMode) -> Angles:
+        horizontal, vertical = self._request(2107, (inclination_mode.value,))
+        return Angles(float(horizontal), float(vertical))
+
+    def get_angles_complete(self, inclination_mode: TMCInclinationMode) -> (Angles, float, int, float, float, float, int, FacePosition ):
+        horizontal, vertical, angle_accuracy, angle_measure_time, cross_inclincation, length_inclination, incline_accuracy, incline_measurement_time, face_position = self._request(2003, (inclination_mode.value,))
+        angles = Angles(float(horizontal), float(vertical))
+        angle_accuracy = float(angle_accuracy)
+        angle_measure_time = float(angle_measure_time)
+        cross_inclincation = float(cross_inclincation)
+        length_inclination = float(length_inclination)
+        incline_accuracy = float(incline_accuracy)
+        incline_measurement_time = int(incline_measurement_time)
+        face_position = FacePosition(int(face_position))
+        return angles, angle_accuracy, angle_measure_time, cross_inclincation, length_inclination, incline_accuracy, incline_measurement_time, face_position
+
+    def do_measure(self, measurement_mode: TMCMeasurementMode, inclination_mode: TMCInclinationMode):
+        self._request(2008, (measurement_mode.value, inclination_mode.value,))
