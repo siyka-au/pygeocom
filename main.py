@@ -1,5 +1,5 @@
 import serial
-from pygeocom import PyGeoCom, RecordFormat, ControllerMode, ControllerStopMode, LockInStatus, PrismType, ReflectorType, MeasurementMode, MeasurementProgram, TargetType, PositionMode, ATRRecognitionMode, OnOff
+from pygeocom import PyGeoCom, RecordFormat, ControllerMode, ControllerStopMode, LockInStatus, PrismType, ReflectorType, MeasurementMode, MeasurementProgram, TargetType, PositionMode, ATRRecognitionMode, OnOff, TMCInclinationMode, TMCMeasurementMode
 from datetime import datetime
 from time import sleep, time
 
@@ -43,9 +43,9 @@ def main():
     # print(a)
     #geo.set_record_format(RecordFormat.GSI_8 if a == RecordFormat.GSI_16 else RecordFormat.GSI_16)
 
-    #geo.laser_pointer_on()
-    #sleep(1)
-    #geo.laser_pointer_off()
+    # geo.laser_pointer_on()
+    # sleep(5)
+    # geo.laser_pointer_off()
     #sleep(1)
     #geo.laser_pointer_on()
     #sleep(1)
@@ -77,39 +77,51 @@ def main():
     #print(geo.get_motor_lock_status())
     #geo.set_velocity(0.1, 0.1)
     #sleep(3)
-    #geo.stop_controller(ControllerStopMode.NORMAL)
-    #geo.start_controller(ControllerMode.RELATIVE_POSITIONING)
+    # geo.stop_controller(ControllerStopMode.NORMAL)
+    geo.start_controller(ControllerMode.RELATIVE_POSITIONING)
 
     # print(geo.get_measurement_program())
 
-    #geo.set_measurement_program(MeasurementProgram.SINGLE_RLESS_VISIBLE)
+    geo.set_measurement_program(MeasurementProgram.CONT_REF_STANDARD)
     #print(geo.measure_distance_and_angles(MeasurementMode.DEFAULT_DISTANCE))
 
-    #geo.set_target_type(TargetType.REFLECTOR)
-    #geo.search_target()
+    geo.set_target_type(TargetType.REFLECTOR)
+    geo.set_search_spiral(3.14, 0.2)
+    geo.search_target()
+    # geo.search(3.1, 0.2)
 
     #print(geo.get_tolerance())
     #print(geo.get_positioning_timeout())
 
     #print(geo.measure_distance_and_angles(MeasurementMode.DEFAULT_DISTANCE))
 
-    geo.position(2.736575413969699, 4.674161028769293, atr_mode = ATRRecognitionMode.TARGET)
+    # geo.position(2.736575413969699, 4.674161028769293, atr_mode = ATRRecognitionMode.TARGET)
 
-    print(geo.measure_distance_and_angles(MeasurementMode.DEFAULT_DISTANCE))
+    # print(geo.measure_distance_and_angles(MeasurementMode.DEFAULT_DISTANCE))
 
     # geo.change_face(atr_mode = ATRRecognitionMode.TARGET)
     # print(geo.measure_distance_and_angles(MeasurementMode.DEFAULT_DISTANCE))
 
-    print(geo.get_fine_adjust_mode())
+    # print(geo.get_fine_adjust_mode())
 
-    geo.fine_adjust(0.5, 0.5)
-    print(geo.measure_distance_and_angles(MeasurementMode.DEFAULT_DISTANCE))
+    # geo.fine_adjust(0.5, 0.5)
+    # print(geo.measure_distance_and_angles(MeasurementMode.DEFAULT_DISTANCE))
 
     geo.user_lock_state_on()
     geo.lock_in()
-    sleep(10)
-    geo.user_lock_state_off()
+    # sleep(10)
+    
 
+    geo.do_measure(TMCMeasurementMode.DISTANCE_TRACKING, TMCInclinationMode.AUTOMATIC)
+
+    # print(geo.get_simple_measurement(TMCInclinationMode.AUTOMATIC))
+    # print(geo.get_angles_complete(TMCInclinationMode.AUTOMATIC))
+    
+    for _ in range(10):
+        print(geo.get_coordinate(TMCInclinationMode.AUTOMATIC))
+        sleep(1)
+
+    geo.user_lock_state_off()
     ser.close()
 
 if __name__ == "__main__":
