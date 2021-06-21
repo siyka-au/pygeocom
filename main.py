@@ -8,6 +8,9 @@ def main():
     
     geo = PyGeoCom(ser, debug = False)
 
+    PrismType.SMR = PrismType.USER2
+    PrismType.BOHNENSTINGL_30MM_PRISM = PrismType.USER1
+
     # print("Instrument Name: {}".format(geo.get_instrument_name()))
     # print("Serial Number:   {}".format(geo.get_instrument_number()))
     # print("Configuration")
@@ -85,9 +88,9 @@ def main():
     geo.set_measurement_program(MeasurementProgram.CONT_REF_STANDARD)
     #print(geo.measure_distance_and_angles(MeasurementMode.DEFAULT_DISTANCE))
 
-    geo.set_target_type(TargetType.REFLECTOR)
-    geo.set_search_spiral(3.14, 0.2)
-    geo.search_target()
+    geo.set_target_type(TargetType.REFLECTORLESS)
+    #geo.set_search_spiral(3.14 / 12, 3.14 / 36)
+    #geo.search_target()
     # geo.search(3.1, 0.2)
 
     #print(geo.get_tolerance())
@@ -107,12 +110,16 @@ def main():
     # geo.fine_adjust(0.5, 0.5)
     # print(geo.measure_distance_and_angles(MeasurementMode.DEFAULT_DISTANCE))
 
-    geo.user_lock_state_on()
-    geo.lock_in()
+    #geo.user_lock_state_on()
+    #geo.lock_in()
     # sleep(10)
     
+    geo.laser_pointer_on()
+    sleep(2)
+    geo.laser_pointer_off()
+    #sleep(1)
 
-    geo.do_measure(TMCMeasurementMode.DISTANCE_TRACKING, TMCInclinationMode.AUTOMATIC)
+    geo.do_measure(TMCMeasurementMode.DEFAULT_DISTANCE, TMCInclinationMode.AUTOMATIC)
 
     # print(geo.get_simple_measurement(TMCInclinationMode.AUTOMATIC))
     # print(geo.get_angles_complete(TMCInclinationMode.AUTOMATIC))
